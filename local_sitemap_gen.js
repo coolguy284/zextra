@@ -24,7 +24,7 @@ var crawler = {
     for (var depth = 1; newPaths.length > 0 && depth < 10; depth++) {
       newPaths = (await Promise.all(
         newPaths.map(filePath => {
-          let matched = filePath[1] ? filePath[1].toString().match(/(?<=<a.*href\s*=\s*(?:'|")).*?(?=(?:'|")>)/g) ?? [] : [];
+          let matched = filePath[1] ? filePath[1].toString().match(/(?<=<a.*href\s*=\s*['"]).*?(?=['"]>)/g) ?? [] : [];
           return matched.map(subFilePath => {
               subFilePath = subFilePath.endsWith('/') ? subFilePath + 'index.html' : subFilePath;
               return subFilePath.startsWith('/') ? subFilePath : path.join(filePath[0], '../' + subFilePath).split(path.sep).join(path.posix.sep);
