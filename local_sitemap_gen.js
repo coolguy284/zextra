@@ -51,24 +51,31 @@ var crawler = {
   },
 };
 
-function performCrawl(rootFilePath, baseURL, initialPage) {
+async function performCrawl(rootFilePath, baseURL, initialPage) {
   if (rootFilePath == null) throw new Error('Site root must be specified');
   if (baseURL == null) throw new Error('Base URL must be specified');
   if (initialPage == null) initialPage = '/index.html';
-  crawler.crawl(initialPage, crawler.fsGetterFuncGen(rootFilePath)).then(sites => {
-    fs.writeFileSync(rootFilePath + '/sitemap.xml', 
+  
+  let sites = await crawler.crawl(initialPage, crawler.fsGetterFuncGen(rootFilePath));
+  
+  await fs.promises.writeFile(
+    rootFilePath + '/sitemap.xml', 
     '<?xml version = \'1.0\' encoding = \'utf-8\'?>\n' +
     '<urlset xmlns = \'http://www.sitemaps.org/schemas/sitemap/0.9\'>\n' +
-    Array.from(sites.entries()).map(site =>
-      '  <url>\n' +
-      `    <loc>${baseURL}${replaceIndexWSlash && site[0].endsWith('index.html') ? site[0].slice(0, -10) : site[0]}</loc>\n` +
-      `    <lastmod>${fs.statSync(rootFilePath + site[0]).mtime.toISOString().slice(0, -1)}+00:00</lastmod>\n` +
-      `    <changefreq>yearly</changefreq>\n` +
-      `    <priority>${(1.0 - site[1] / 10).toFixed(1)}</priority>\n` +
-      '  </url>'
-    ).join('\n  \n') + '\n' +
-    '</urlset>\n');
-  });
+    (await Promise.all(
+      Array.from(sites.entries()).map(async site => {
+        let url = `${baseURL}${replaceIndexWSlash && site[0].endsWith('index.html') ? site[0].slice(0, -10) : site[0]}`;
+        let escapedUrl = url.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;').replace(/\r/g,'&#13;');
+        return '  <url>\n' +
+          `    <loc>${escapedUrl}</loc>\n` +
+          `    <lastmod>${(await fs.promises.stat(rootFilePath + site[0])).mtime.toISOString().slice(0, -1)}+00:00</lastmod>\n` +
+          '    <changefreq>yearly</changefreq>\n' +
+          `    <priority>${(1.0 - site[1] / 10).toFixed(1)}</priority>\n` +
+          '  </url>';
+      })
+    )).join('\n  \n') + '\n' +
+    '</urlset>\n'
+  );
 }
 
 if (process.argv.length == 2 || process.argv[2] == '--help') {
