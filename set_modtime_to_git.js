@@ -38,6 +38,7 @@ function getGitModDate(repoPath, filePath) {
 }
 
 async function setModTimes(repoPath, folderInRepoPath) {
+  if (folderInRepoPath == null) folderInRepoPath = '.';
   var folderPath = repoPath + '/' + folderInRepoPath;
   for (var filePath of recursiveReaddir(folderPath, ['.git', '.vs'])) {
     var repoFilePath = folderInRepoPath + '/' + filePath

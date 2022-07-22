@@ -61,7 +61,7 @@ async function performCrawl(rootFilePath, baseURL, initialPage) {
   await fs.promises.writeFile(
     rootFilePath + '/sitemap.xml', 
     '<?xml version = \'1.0\' encoding = \'utf-8\'?>\n' +
-    '<urlset xmlns = \'http://www.sitemaps.org/schemas/sitemap/0.9\'>\n' +
+    '<urlset xmlns = \'https://www.sitemaps.org/schemas/sitemap/0.9\'>\n' +
     (await Promise.all(
       Array.from(sites.entries()).map(async site => {
         let url = `${baseURL}${replaceIndexWSlash && site[0].endsWith('index.html') ? site[0].slice(0, -10) : site[0]}`;
