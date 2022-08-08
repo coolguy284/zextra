@@ -52,7 +52,7 @@ async function setModTimes(repoPath, folderInRepoPath) {
 }
 
 if (process.argv.length == 2 || process.argv[2] == '--help') {
-  console.log('arguments: node set_modtime_to_git.js <repoPath> [folderInRepoPath]');
+  console.log('arguments: node set_modtime_to_git.js <repoPath> [folderInRepoPath = .]');
 } else {
   setModTimes(process.argv[2], process.argv[3]);
 }

@@ -51,10 +51,11 @@ var crawler = {
   },
 };
 
-async function performCrawl(rootFilePath, baseURL, initialPage) {
+async function performCrawl(rootFilePath, baseURL, initialPage, extraSpace) {
   if (rootFilePath == null) throw new Error('Site root must be specified');
   if (baseURL == null) throw new Error('Base URL must be specified');
   if (initialPage == null) initialPage = '/index.html';
+  if (extraSpace == null) extraSpace = true;
   
   let sites = await crawler.crawl(initialPage, crawler.fsGetterFuncGen(rootFilePath));
   
@@ -73,13 +74,13 @@ async function performCrawl(rootFilePath, baseURL, initialPage) {
           `    <priority>${(1.0 - site[1] / 10).toFixed(1)}</priority>\n` +
           '  </url>';
       })
-    )).join('\n  \n') + '\n' +
+    )).join(extraSpace ? '\n  \n' : '\n') + '\n' +
     '</urlset>\n'
   );
 }
 
 if (process.argv.length == 2 || process.argv[2] == '--help') {
-  console.log('arguments: node local_sitemap_gen.js <rootFilePath> <baseURL> [initialPage]');
+  console.log('arguments: node local_sitemap_gen.js <rootFilePath> <baseURL> [initialPage = /index.html] [extraSpace = true]');
 } else {
-  performCrawl(process.argv[2], process.argv[3].replace(/\/$/, ''), (process.argv[4] ?? '/index.html').replace(/^\/?/, '/'));
+  performCrawl(process.argv[2], process.argv[3].replace(/\/$/, ''), (process.argv[4] ?? '/index.html').replace(/^\/?/, '/'), process.argv[5] != 'false');
 }
