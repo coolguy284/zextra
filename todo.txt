@@ -1,0 +1,2 @@
+low priority:
+use sets for include checks in recursivereaddir for performance
