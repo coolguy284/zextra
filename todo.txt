@@ -1,3 +1,5 @@
+add includefiles option for recursivereaddir
+
 low priority:
 use sets for include checks in recursivereaddir for performance
 in recursivereaddir add follow symlinks option
