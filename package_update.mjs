@@ -98,20 +98,65 @@ async function processPackages(projectFolders) {
   for (const packageName of packages) {
     console.log(`Getting package ${packageName}`);
     
-    packageVersion.set(
-      packageName,
-      await new Promise(r => {
-        get(`https://registry.npmjs.org/${packageName}`, {
-          headers: {
-            'accept': 'application/vnd.npm.install-v1+json; q=1.0, application/json; q=0.8, */*',
-          },
-        }, res => {
-          let chunks = [];
-          res.on('data', c => chunks.push(c));
-          res.on('end', () => r(JSON.parse(Buffer.concat(chunks).toString())['dist-tags'].latest));
+    try {
+      const npmResponse =
+        await new Promise((r, j) => {
+          const req = get(`https://registry.npmjs.org/${packageName}`, {
+            headers: {
+              'accept': 'application/vnd.npm.install-v1+json; q=1.0, application/json; q=0.8, */*',
+            },
+          }, res => {
+            let errored = false;
+            
+            if (res.statusCode != 200) {
+              j(new Error('package not found'));
+              res.socket.destroySoon();
+              errored = true;
+            }
+            
+            let chunks = [];
+            
+            res.on('data', c => {
+              if (!errored) {
+                chunks.push(c);
+              }
+            });
+            
+            res.on('end', () => {
+              if (!errored) {
+                r(
+                  Buffer
+                    .concat(chunks)
+                    .toString()
+                );
+              }
+            });
+            
+            res.on('error', err => {
+              if (!errored) {
+                j(err);
+                errored = true;
+              }
+            });
+          });
+          
+          req.on('error', err => {
+            j(err);
+          });
+          
+          req.end();
         });
-      }),
-    );
+      
+      const version =
+        JSON.parse(npmResponse)
+          ['dist-tags']
+          .latest;
+      
+      packageVersion.set(packageName, version);
+    } catch (err) {
+      console.error(`Error getting package: ${packageName}`);
+      console.error(err);
+    }
   }
   
   // Replace version numbers
@@ -119,12 +164,16 @@ async function processPackages(projectFolders) {
   for (const file of files.values()) {
     const { json, blankLines } = file;
     
-    for (const packageName in json.dependencies) {
-      json.dependencies[packageName] = '^' + packageVersion[packageName];
+    for (const { dependencyPath } of DEPS_TO_CHECK) {
+      for (const packageName in json[dependencyPath]) {
+        if (packageVersion.has(packageName)) {
+          json[dependencyPath][packageName] = `^${packageVersion.get(packageName)}`;
+        }
+      }
     }
     
     const newLines =
-      JSON.stringify(file.json, null, 2)
+      JSON.stringify(json, null, 2)
       .split('\n');
     
     for (const line of blankLines) {
