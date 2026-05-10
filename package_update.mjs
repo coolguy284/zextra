@@ -87,10 +87,12 @@ async function processPackages(projectFolders) {
   
   for (const { json } of files.values()) {
     for (const { dependencyPath } of DEPS_TO_CHECK) {
-      for (const [ package, currentVersion ] of Object.entries(json[dependencyPath])) {
-        // Ignore git repo or other complicated dependencies:
-        if (!currentVersion.includes('/')) {
-          packages.add(package);
+      if (dependencyPath in json) {
+        for (const [ packageName, currentVersion ] of Object.entries(json[dependencyPath])) {
+          // Ignore git repo or other complicated dependencies:
+          if (!currentVersion.includes('/')) {
+            packages.add(packageName);
+          }
         }
       }
     }
@@ -170,11 +172,13 @@ async function processPackages(projectFolders) {
     const { json, blankLines } = file;
     
     for (const { dependencyPath } of DEPS_TO_CHECK) {
-      for (const [ packageName, oldVersion ] in Object.entries(json[dependencyPath])) {
-        // First if is for ignore git repo or other complicated dependencies:
-        if (!oldVersion.includes('/')) {
-          if (packageVersion.has(packageName)) {
-            json[dependencyPath][packageName] = `^${packageVersion.get(packageName)}`;
+      if (dependencyPath in json) {
+        for (const [ packageName, oldVersion ] in Object.entries(json[dependencyPath])) {
+          // First if is for ignore git repo or other complicated dependencies:
+          if (!oldVersion.includes('/')) {
+            if (packageVersion.has(packageName)) {
+              json[dependencyPath][packageName] = `^${packageVersion.get(packageName)}`;
+            }
           }
         }
       }
