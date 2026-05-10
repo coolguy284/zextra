@@ -1,9 +1,13 @@
-// node package_update.js <folder1> ...
+// node package_update.mjs <folder1> ...
 
-var filesToCheck = ['package.json', 'package-basic.json'];
+import {
+  access,
+  readFile,
+  writeFile,
+} from 'node:fs/promises';
+import { get } from 'node:https';
 
-var fs = require('fs');
-var https = require('https');
+const filesToCheck = ['package.json', 'package-basic.json'];
 
 async function processPackages(projectFolders) {
   var file, packageName, path;
@@ -14,8 +18,8 @@ async function processPackages(projectFolders) {
   for (var folder of projectFolders) {
     for (file of filesToCheck) {
       path = folder + '/' + file;
-      if (fs.existsSync(path)) {
-        var fileText = fs.readFileSync(path).toString();
+      if (await access(path)) {
+        var fileText = (await readFile(path)).toString();
         var fileJson = JSON.parse(fileText);
         if ('dependencies' in fileJson) {
           console.log(`Processing file ${path}`);
@@ -46,7 +50,7 @@ async function processPackages(projectFolders) {
   for (packageName of packages) {
     console.log(`Getting package ${packageName}`);
     packageVersion[packageName] = await new Promise(r => {
-      https.get(`https://registry.npmjs.org/${packageName}`, {
+      get(`https://registry.npmjs.org/${packageName}`, {
         headers: {
           'accept': 'application/vnd.npm.install-v1+json; q=1.0, application/json; q=0.8, */*',
         },
@@ -71,7 +75,7 @@ async function processPackages(projectFolders) {
   // replace files
   for (path in files) {
     console.log(`Updating file ${path}`);
-    fs.writeFileSync(path, files[path].text);
+    await writeFile(path, files[path].text);
   }
 }
 
