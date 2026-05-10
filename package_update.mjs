@@ -86,7 +86,7 @@ async function processPackages(projectFolders) {
   const packages = new Set();
   
   for (const { json } of files.values()) {
-    for (const { dependencyPath } of DEPS_TO_CHECK) {
+    for (const dependencyPath of DEPS_TO_CHECK) {
       if (dependencyPath in json) {
         for (const [ packageName, currentVersion ] of Object.entries(json[dependencyPath])) {
           // Ignore git repo or other complicated dependencies:
@@ -171,9 +171,9 @@ async function processPackages(projectFolders) {
   for (const file of files.values()) {
     const { json, blankLines } = file;
     
-    for (const { dependencyPath } of DEPS_TO_CHECK) {
+    for (const dependencyPath of DEPS_TO_CHECK) {
       if (dependencyPath in json) {
-        for (const [ packageName, oldVersion ] in Object.entries(json[dependencyPath])) {
+        for (const [ packageName, oldVersion ] of Object.entries(json[dependencyPath])) {
           // First if is for ignore git repo or other complicated dependencies:
           if (!oldVersion.includes('/')) {
             if (packageVersion.has(packageName)) {
