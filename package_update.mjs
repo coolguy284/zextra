@@ -49,7 +49,7 @@ async function getTempPath(path) {
 async function processPackages(projectFolders) {
   // Get all files
   
-  let files = new Map();
+  const files = new Map();
   
   for (const folder of projectFolders) {
     for (const file of FILES_TO_CHECK) {
@@ -83,17 +83,22 @@ async function processPackages(projectFolders) {
   
   // Get packages
   
-  let packages = new Set();
+  const packages = new Set();
   
   for (const { json } of files.values()) {
     for (const { dependencyPath } of DEPS_TO_CHECK) {
-      Object.keys(json[dependencyPath]).forEach(x => packages.add(x));
+      for (const [ package, currentVersion ] of Object.entries(json[dependencyPath])) {
+        // Ignore git repo or other complicated dependencies:
+        if (!currentVersion.includes('/')) {
+          packages.add(package);
+        }
+      }
     }
   }
   
   // Get package info
   
-  let packageVersion = new Map();
+  const packageVersion = new Map();
   
   for (const packageName of packages) {
     console.log(`Getting package ${packageName}`);
@@ -165,9 +170,12 @@ async function processPackages(projectFolders) {
     const { json, blankLines } = file;
     
     for (const { dependencyPath } of DEPS_TO_CHECK) {
-      for (const packageName in json[dependencyPath]) {
-        if (packageVersion.has(packageName)) {
-          json[dependencyPath][packageName] = `^${packageVersion.get(packageName)}`;
+      for (const [ packageName, oldVersion ] in Object.entries(json[dependencyPath])) {
+        // First if is for ignore git repo or other complicated dependencies:
+        if (!oldVersion.includes('/')) {
+          if (packageVersion.has(packageName)) {
+            json[dependencyPath][packageName] = `^${packageVersion.get(packageName)}`;
+          }
         }
       }
     }
