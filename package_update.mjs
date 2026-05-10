@@ -199,7 +199,7 @@ async function processPackages(projectFolders) {
   
   // Replace files
   
-  for (const [ path, newText ] in files) {
+  for (const [ path, { newText } ] of files) {
     console.log(`Updating file ${path}`);
     
     const tempPath = await getTempPath(path);
