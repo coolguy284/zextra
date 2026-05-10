@@ -2,13 +2,49 @@
 
 import {
   access,
+  readdir,
   readFile,
+  rename,
   writeFile,
 } from 'node:fs/promises';
 import { get } from 'node:https';
+import {
+  basename,
+  dirname,
+} from 'node:path';
 
 const FILES_TO_CHECK = ['package.json', 'package-basic.json'];
 const DEPS_TO_CHECK = ['dependencies', 'optionalDependencies', 'devDependencies'];
+
+async function exists(path) {
+  try {
+    await access(path);
+    return true;
+  } catch (err) {
+    if (err.code == 'ENOENT') {
+      return false;
+    } else {
+      throw err;
+    }
+  }
+}
+
+async function getTempPath(path) {
+  const folderPath = dirname(path);
+  const fileName = basename(path);
+  
+  const folderFiles = new Set(await readdir(folderPath));
+  
+  let tempPath;
+  
+  let index = 0;
+  
+  while (folderFiles.has(tempPath = `${folderPath}/${fileName}.tmp.${index}`)) {
+    index++;
+  }
+  
+  return tempPath;
+}
 
 async function processPackages(projectFolders) {
   // Get all files
@@ -21,7 +57,7 @@ async function processPackages(projectFolders) {
       
       console.log(`Processing file ${path}`);
       
-      if (await access(path)) {
+      if (await exists(path)) {
         const fileText = (await readFile(path)).toString();
         const fileJson = JSON.parse(fileText);
         const fileLines = fileText.split(/\r?\n/);
@@ -104,7 +140,11 @@ async function processPackages(projectFolders) {
   
   for (const [ path, newText ] in files) {
     console.log(`Updating file ${path}`);
-    await writeFile(path, newText);
+    
+    const tempPath = await getTempPath(path);
+    
+    await writeFile(tempPath, newText);
+    await rename(tempPath, path);
   }
 }
 
